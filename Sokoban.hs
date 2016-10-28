@@ -1,5 +1,6 @@
 -- Simple implementation of the Sokoban game.
 -- More details about the game here: http://rubyquiz.com/quiz5.html
+-- Inspired from https://github.com/codinguncut/Sokoban
 
 module Sokoban where
 
@@ -9,6 +10,7 @@ import System.IO  (stdin, stdout, hSetEcho, hSetBuffering
 import System.Process
 import Data.List (sort)
 import Control.Monad (when)
+
 
 data Input = Up | Down | Left | Right
 
@@ -52,6 +54,7 @@ parseLevel level = foldl parse initialWorld{wMax = (maxX, maxY)} tokens
                             ' ' -> wld
                             otherwise -> error ("Unrecognized symbol: " ++ show ch)
 
+
 displayWorld :: World -> IO ()
 displayWorld world = putStrLn board
   where board         = unlines $ map (map showAt) $ coords
@@ -68,7 +71,7 @@ displayWorld world = putStrLn board
 
 -- takes a coord, takes the world, and says if that artefact is there in
 -- that coord
-isMan c world     = c == (wMan world)
+isMan c world     = c   == (wMan world)
 isWall c world    = elem c (wWalls world)
 isCrate c world   = elem c (wCrates world)
 isStorage c world = elem c (wStorages world)
@@ -87,7 +90,7 @@ updateWorld world input
           newPos'             = translate input newPos
           world'              = world {wMan = newPos}
           moveCrate world pos = world {wMan = newPos
-                                      ,wCrates = newPos':(filter (\c -> c /= newPos) (wCrates world))}
+                                      ,wCrates = newPos':(filter (/= newPos) (wCrates world))}
 
 isFinished :: World -> Bool
 -- compares by checking if all the coords of the crates match all the
@@ -131,14 +134,17 @@ gameLoop world = do
     input <- getInput
     let world' = updateWorld world input
     if isFinished world'
-      then displayWorld world' >> print "Well Done!"
+      then system "clear" >> displayWorld world' >> print "Well Done!"
       else gameLoop world'
 
 main :: IO ()
 main = do
+    putStrLn "Choose a level between 1-3:"
+    levelN <- getLine
+
     hSetEcho stdin False
     hSetBuffering stdin NoBuffering
     hSetBuffering stdout NoBuffering
 
-    world <- loadLevel "levels/level2.txt"
+    world <- loadLevel ("levels/level" ++ levelN ++ ".txt")
     gameLoop world
